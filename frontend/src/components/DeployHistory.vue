@@ -173,7 +173,15 @@
           </template>
         </el-table-column>
         
-        <el-table-column prop="git_branch" label="Git分支" width="120" />
+        <el-table-column prop="git_branch" label="Git分支" width="120">
+          <template #default="{ row }">
+            <el-tag type="info" size="small" v-if="row.git_branch">
+              <el-icon><Branch /></el-icon>
+              {{ row.git_branch }}
+            </el-tag>
+            <span v-else class="text-muted">未指定</span>
+          </template>
+        </el-table-column>
         
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
@@ -181,21 +189,34 @@
           </template>
         </el-table-column>
         
-        <el-table-column prop="start_time" label="开始时间" width="160">
+        <el-table-column prop="deploy_time" label="开始时间" width="160">
           <template #default="{ row }">
-            {{ formatTime(row.start_time) }}
+            <div class="time-display">
+              <el-icon><Clock /></el-icon>
+              {{ formatTime(row.deploy_time) }}
+            </div>
           </template>
         </el-table-column>
         
         <el-table-column prop="end_time" label="结束时间" width="160">
           <template #default="{ row }">
-            {{ formatTime(row.end_time) }}
+            <div class="time-display" v-if="row.end_time">
+              <el-icon><Clock /></el-icon>
+              {{ formatTime(row.end_time) }}
+            </div>
+            <el-tag type="warning" size="small" v-else>进行中</el-tag>
           </template>
         </el-table-column>
         
         <el-table-column prop="duration" label="耗时" width="100">
           <template #default="{ row }">
-            {{ getDuration(row.start_time, row.end_time) }}
+            <el-tag type="success" size="small" v-if="row.end_time">
+              <el-icon><Timer /></el-icon>
+              {{ getDuration(row.deploy_time, row.end_time) }}
+            </el-tag>
+            <el-tag type="warning" size="small" v-else>
+              {{ getDuration(row.deploy_time) }}
+            </el-tag>
           </template>
         </el-table-column>
         
@@ -835,11 +856,16 @@ const formatTime = (time) => {
   return formatDateTime(new Date(time))
 }
 
-const getDuration = (startTime, endTime) => {
-  if (!startTime || !endTime) return ''
+const getDuration = (startTime, endTime = null) => {
+  if (!startTime) return ''
   
-  const duration = new Date(endTime).getTime() - new Date(startTime).getTime()
-  const seconds = Math.floor(duration / 1000)
+  const start = new Date(startTime)
+  const end = endTime ? new Date(endTime) : new Date()
+  const diffMs = end.getTime() - start.getTime()
+  
+  if (diffMs < 0) return '0秒'
+  
+  const seconds = Math.floor(diffMs / 1000)
   const minutes = Math.floor(seconds / 60)
   const hours = Math.floor(minutes / 60)
   
@@ -959,6 +985,18 @@ onMounted(() => {
 
 .text-muted {
   color: #999;
+}
+
+.time-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.time-display .el-icon {
+  font-size: 12px;
+  color: #909399;
 }
 
 /* 部署详情样式 */
