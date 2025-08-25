@@ -60,11 +60,11 @@ router.post('/execute', async (req, res) => {
     }
 
     // 验证部署类型
-    if (!['backend', 'frontend', 'both'].includes(deploy_type)) {
+    if (!['backend', 'frontend'].includes(deploy_type)) {
       console.log('无效的部署类型:', deploy_type);
       return res.status(400).json({
         success: false,
-        error: '部署类型必须是 backend、frontend 或 both'
+        error: '部署类型必须是 backend 或 frontend'
       });
     }
 
@@ -233,22 +233,11 @@ async function executeDeployment(deployId, project, server, deployType, options,
       sendWebSocketMessage('step', { step: 2, status: 'process', message: '上传文件' });
       
       try {
-        // 根据项目类型和部署类型智能判断上传逻辑
-        const shouldUploadBackend = (deployType === 'backend' || deployType === 'both') && 
-                                   project.project_type === 'backend';
-        const shouldUploadFrontend = (deployType === 'frontend' || deployType === 'both') && 
-                                    project.project_type === 'frontend';
-        
-        if (shouldUploadBackend) {
+        // 根据部署类型直接判断上传逻辑
+        if (deployType === 'backend') {
           await uploadBackend(deployId, project, server, addLog);
-        } else if ((deployType === 'backend' || deployType === 'both') && project.project_type === 'frontend') {
-          await addLog('跳过后端文件上传（当前为前端项目）');
-        }
-
-        if (shouldUploadFrontend) {
+        } else if (deployType === 'frontend') {
           await uploadFrontend(deployId, project, server, addLog);
-        } else if ((deployType === 'frontend' || deployType === 'both') && project.project_type === 'backend') {
-          await addLog('跳过前端文件上传（当前为后端项目）');
         }
 
         await addLog('文件上传完成');
@@ -275,13 +264,8 @@ async function executeDeployment(deployId, project, server, deployType, options,
       sendWebSocketMessage('step', { step: 3, status: 'process', message: '重启服务' });
       
       try {
-        // 根据项目类型和部署类型智能判断重启逻辑
-        const shouldRestartBackend = (deployType === 'backend' || deployType === 'both') && 
-                                     project.project_type === 'backend';
-        const shouldRestartFrontend = (deployType === 'frontend' || deployType === 'both') && 
-                                     project.project_type === 'frontend';
-        
-        if (shouldRestartBackend) {
+        // 根据部署类型直接判断重启逻辑
+        if (deployType === 'backend') {
           if (server.restart_script_path) {
             await addLog('正在重启后端服务...');
             
@@ -295,11 +279,7 @@ async function executeDeployment(deployId, project, server, deployType, options,
           } else {
             await addLog('未配置重启脚本，跳过后端服务重启');
           }
-        } else if ((deployType === 'backend' || deployType === 'both') && project.project_type === 'frontend') {
-          await addLog('跳过后端服务重启（当前为前端项目）');
-        }
-
-        if (shouldRestartFrontend) {
+        } else if (deployType === 'frontend') {
           if (server.nginx_reload) {
             await addLog('正在重载Nginx...');
             
@@ -313,8 +293,6 @@ async function executeDeployment(deployId, project, server, deployType, options,
           } else {
             await addLog('未启用Nginx重载');
           }
-        } else if ((deployType === 'frontend' || deployType === 'both') && project.project_type === 'backend') {
-          await addLog('跳过Nginx重载（当前为后端项目）');
         }
 
         await deployRecord.update(deployId, {

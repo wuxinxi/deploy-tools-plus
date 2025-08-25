@@ -92,9 +92,8 @@
           <el-col :span="12">
             <el-form-item label="部署类型" prop="deployType">
               <el-radio-group v-model="deployForm.deployType">
-                <el-radio label="both">完整部署</el-radio>
-                <el-radio label="backend">仅后端</el-radio>
-                <el-radio label="frontend">仅前端</el-radio>
+                <el-radio label="frontend">前端部署</el-radio>
+                <el-radio label="backend">后端部署</el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>
@@ -314,7 +313,7 @@ const deployForm = ref({
   serverId: null,
   gitBranch: '',
   buildCommand: '',
-  deployType: 'both',
+  deployType: 'frontend',
   options: ['backup', 'pull', 'build', 'upload', 'restart'],
   description: ''
 })

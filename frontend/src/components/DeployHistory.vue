@@ -109,7 +109,8 @@
             clearable
             style="width: 120px"
           >
-            <el-option label="完整部署" value="full" />
+            <el-option label="前端部署" value="frontend" />
+            <el-option label="后端部署" value="backend" />
             <el-option label="仅代码" value="code-only" />
             <el-option label="仅重启" value="restart-only" />
           </el-select>
@@ -243,100 +244,184 @@
     <el-dialog 
       v-model="showDetailsDialog" 
       title="部署详情" 
-      width="80%"
+      width="90%"
       destroy-on-close
+      :close-on-click-modal="false"
     >
       <div v-if="selectedRecord">
         <!-- 基本信息 -->
-        <h3>基本信息</h3>
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="部署ID">
-            {{ selectedRecord.id }}
-          </el-descriptions-item>
-          <el-descriptions-item label="项目名称">
-            {{ selectedRecord.project_name }}
-          </el-descriptions-item>
-          <el-descriptions-item label="项目类型">
-            {{ selectedRecord.project_type }}
-          </el-descriptions-item>
-          <el-descriptions-item label="服务器">
-            {{ selectedRecord.server_name }} ({{ selectedRecord.server_ip }})
-          </el-descriptions-item>
-          <el-descriptions-item label="部署类型">
-            {{ getDeployTypeText(selectedRecord.deploy_type) }}
-          </el-descriptions-item>
-          <el-descriptions-item label="Git分支">
-            {{ selectedRecord.git_branch }}
-          </el-descriptions-item>
-          <el-descriptions-item label="状态">
-            <el-tag :type="getStatusType(selectedRecord.status)">
-              {{ selectedRecord.status }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="开始时间">
-            {{ formatTime(selectedRecord.start_time) }}
-          </el-descriptions-item>
-          <el-descriptions-item label="结束时间">
-            {{ formatTime(selectedRecord.end_time) }}
-          </el-descriptions-item>
-          <el-descriptions-item label="总耗时">
-            {{ getDuration(selectedRecord.start_time, selectedRecord.end_time) }}
-          </el-descriptions-item>
-          <el-descriptions-item label="部署说明" :span="2">
-            {{ selectedRecord.description || '无' }}
-          </el-descriptions-item>
-        </el-descriptions>
+        <el-card class="detail-card">
+          <template #header>
+            <div class="card-header">
+              <h3>基本信息</h3>
+              <el-tag :type="getStatusType(selectedRecord.status)" size="large">
+                {{ selectedRecord.status }}
+              </el-tag>
+            </div>
+          </template>
+          
+          <el-descriptions :column="3" border>
+            <el-descriptions-item label="部署ID">
+              <el-tag type="info">#{{ selectedRecord.id }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="项目名称">
+              <strong>{{ selectedRecord.project_name }}</strong>
+            </el-descriptions-item>
+            <el-descriptions-item label="项目类型">
+              <el-tag :type="selectedRecord.project_type === 'frontend' ? 'success' : 'primary'">
+                {{ selectedRecord.project_type }}
+              </el-tag>
+            </el-descriptions-item>
+            
+            <el-descriptions-item label="服务器">
+              {{ selectedRecord.server_name }}
+            </el-descriptions-item>
+            <el-descriptions-item label="服务器IP">
+              <el-tag type="warning">{{ selectedRecord.server_ip }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="部署类型">
+              <el-tag :type="getDeployTypeTag(selectedRecord.deploy_type)">
+                {{ getDeployTypeText(selectedRecord.deploy_type) }}
+              </el-tag>
+            </el-descriptions-item>
+            
+            <el-descriptions-item label="Git分支">
+              <el-tag type="info" v-if="selectedRecord.git_branch">
+                <el-icon><Switch /></el-icon>
+                {{ selectedRecord.git_branch }}
+              </el-tag>
+              <span v-else class="text-muted">未指定</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="开始时间">
+              <el-icon><Clock /></el-icon>
+              {{ formatTime(selectedRecord.start_time) }}
+            </el-descriptions-item>
+            <el-descriptions-item label="结束时间">
+              <el-icon><Clock /></el-icon>
+              {{ formatTime(selectedRecord.end_time) || '进行中' }}
+            </el-descriptions-item>
+            
+            <el-descriptions-item label="总耗时" :span="1">
+              <el-tag type="success" v-if="selectedRecord.duration">
+                <el-icon><Timer /></el-icon>
+                {{ selectedRecord.duration }}
+              </el-tag>
+              <span v-else>计算中...</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="部署说明" :span="2">
+              {{ selectedRecord.description || '无' }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </el-card>
 
         <!-- 步骤详情 -->
-        <h3 style="margin-top: 30px;">步骤详情</h3>
-        <el-table :data="selectedRecord.steps" border>
-          <el-table-column prop="step_name" label="步骤" width="150" />
-          <el-table-column prop="status" label="状态" width="100">
-            <template #default="{ row }">
-              <el-tag :type="getStatusType(row.status)">{{ row.status }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="start_time" label="开始时间" width="160">
-            <template #default="{ row }">
-              {{ formatTime(row.start_time) }}
-            </template>
-          </el-table-column>
-          <el-table-column prop="end_time" label="结束时间" width="160">
-            <template #default="{ row }">
-              {{ formatTime(row.end_time) }}
-            </template>
-          </el-table-column>
-          <el-table-column prop="duration" label="耗时" width="100">
-            <template #default="{ row }">
-              {{ getDuration(row.start_time, row.end_time) }}
-            </template>
-          </el-table-column>
-          <el-table-column prop="error_message" label="错误信息">
-            <template #default="{ row }">
-              <span v-if="row.error_message" class="error-text">
-                {{ row.error_message }}
-              </span>
-              <span v-else class="success-text">成功</span>
-            </template>
-          </el-table-column>
-        </el-table>
+        <el-card class="detail-card">
+          <template #header>
+            <h3>步骤详情</h3>
+          </template>
+          
+          <el-table :data="selectedRecord.steps" border stripe>
+            <el-table-column prop="step_name" label="步骤" width="150">
+              <template #default="{ row }">
+                <div class="step-name">
+                  <el-icon v-if="row.status === '成功'" class="success-icon"><Check /></el-icon>
+                  <el-icon v-else-if="row.status === '失败'" class="error-icon"><Close /></el-icon>
+                  <el-icon v-else-if="row.status === '跳过'" class="warning-icon"><Minus /></el-icon>
+                  <el-icon v-else class="info-icon"><Loading /></el-icon>
+                  {{ row.step_name }}
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="getStepStatusType(row.status)">{{ row.status }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="start_time" label="开始时间" width="160">
+              <template #default="{ row }">
+                {{ formatTime(row.start_time) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="end_time" label="结束时间" width="160">
+              <template #default="{ row }">
+                {{ formatTime(row.end_time) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="duration" label="耗时" width="100">
+              <template #default="{ row }">
+                <el-tag size="small" type="info">{{ row.duration }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="error_message" label="结果信息">
+              <template #default="{ row }">
+                <span v-if="row.error_message" class="error-text">
+                  <el-icon><Warning /></el-icon>
+                  {{ row.error_message }}
+                </span>
+                <span v-else-if="row.status === '成功'" class="success-text">
+                  <el-icon><Check /></el-icon>
+                  执行成功
+                </span>
+                <span v-else-if="row.status === '跳过'" class="info-text">
+                  <el-icon><Minus /></el-icon>
+                  已跳过
+                </span>
+                <span v-else class="info-text">-</span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
 
         <!-- 部署日志 -->
-        <h3 style="margin-top: 30px;">部署日志</h3>
-        <div class="log-container">
-          <pre class="log-content">{{ selectedRecord.logs || '暂无日志' }}</pre>
-        </div>
+        <el-card class="detail-card">
+          <template #header>
+            <div class="card-header">
+              <h3>部署日志</h3>
+              <div>
+                <el-button 
+                  size="small" 
+                  @click="copyLogs"
+                  v-if="selectedRecord.logs && selectedRecord.logs !== '暂无日志'"
+                >
+                  <el-icon><CopyDocument /></el-icon>
+                  复制日志
+                </el-button>
+                <el-button 
+                  type="primary" 
+                  size="small" 
+                  @click="downloadDetailLogs"
+                  v-if="selectedRecord.logs && selectedRecord.logs !== '暂无日志'"
+                >
+                  <el-icon><Download /></el-icon>
+                  下载日志
+                </el-button>
+              </div>
+            </div>
+          </template>
+          
+          <div class="log-container" v-if="selectedRecord.logs && selectedRecord.logs !== '暂无日志'">
+            <pre class="log-content">{{ selectedRecord.logs }}</pre>
+          </div>
+          <el-empty 
+            v-else 
+            description="暂无部署日志" 
+            :image-size="100"
+          />
+        </el-card>
       </div>
 
       <template #footer>
-        <el-button @click="showDetailsDialog = false">关闭</el-button>
-        <el-button 
-          type="primary" 
-          @click="downloadDetailLogs"
-          v-if="selectedRecord?.logs"
-        >
-          下载日志
-        </el-button>
+        <div class="dialog-footer">
+          <el-button @click="showDetailsDialog = false">关闭</el-button>
+          <el-button 
+            type="primary" 
+            @click="repeatDeploy(selectedRecord)"
+            :disabled="selectedRecord?.status === '进行中'"
+          >
+            <el-icon><Refresh /></el-icon>
+            重新部署
+          </el-button>
+        </div>
       </template>
     </el-dialog>
 
@@ -357,7 +442,19 @@
 </template>
 
 <script setup>
-import { Delete, Download, Refresh } from '@element-plus/icons-vue'
+import {
+    Check,
+    Clock,
+    Close,
+    CopyDocument,
+    Delete, Download,
+    Loading,
+    Minus,
+    Refresh,
+    Switch,
+    Timer,
+    Warning
+} from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useProjectStore } from '../stores/projectStore'
@@ -682,27 +779,52 @@ const getStatusType = (status) => {
   }
 }
 
-const getDeployTypeTag = (type) => {
-  switch (type) {
-    case 'full':
-      return 'primary'
-    case 'code-only':
+const getStepStatusType = (status) => {
+  switch (status) {
+    case '成功':
       return 'success'
-    case 'restart-only':
+    case '失败':
+      return 'danger'
+    case '跳过':
+      return 'info'
+    case '进行中':
       return 'warning'
     default:
       return ''
   }
 }
 
+const copyLogs = async () => {
+  if (!selectedRecord.value?.logs) {
+    ElMessage.warning('暂无日志内容')
+    return
+  }
+  
+  try {
+    await navigator.clipboard.writeText(selectedRecord.value.logs)
+    ElMessage.success('日志已复制到剪贴板')
+  } catch (error) {
+    ElMessage.error('复制失败')
+  }
+}
+
+const getDeployTypeTag = (type) => {
+  switch (type) {
+    case 'frontend':
+      return 'success'
+    case 'backend':
+      return 'primary'
+    default:
+      return 'info'
+  }
+}
+
 const getDeployTypeText = (type) => {
   switch (type) {
-    case 'full':
-      return '完整部署'
-    case 'code-only':
-      return '仅代码'
-    case 'restart-only':
-      return '仅重启'
+    case 'frontend':
+      return '前端部署'
+    case 'backend':
+      return '后端部署'
     default:
       return type
   }
@@ -823,10 +945,65 @@ onMounted(() => {
 
 .error-text {
   color: #f56c6c;
+  font-weight: 500;
 }
 
 .success-text {
   color: #67c23a;
+  font-weight: 500;
+}
+
+.info-text {
+  color: #909399;
+}
+
+.text-muted {
+  color: #999;
+}
+
+/* 部署详情样式 */
+.detail-card {
+  margin-bottom: 20px;
+}
+
+.detail-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-card h3 {
+  margin: 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.step-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.success-icon {
+  color: #67c23a;
+}
+
+.error-icon {
+  color: #f56c6c;
+}
+
+.warning-icon {
+  color: #e6a23c;
+}
+
+.info-icon {
+  color: #409eff;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .batch-actions {

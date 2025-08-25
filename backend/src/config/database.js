@@ -135,7 +135,7 @@ class Database {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           project_config_id INTEGER,
           server_config_id INTEGER,
-          deploy_type TEXT CHECK(deploy_type IN ('backend', 'frontend', 'both')),
+          deploy_type TEXT CHECK(deploy_type IN ('backend', 'frontend')),
           git_branch TEXT,
           description TEXT,
           status TEXT DEFAULT 'running' CHECK(status IN ('running', 'success', 'failed')),
