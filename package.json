@@ -1,0 +1,29 @@
+{
+  "name": "deploy-tools",
+  "version": "1.0.0",
+  "description": "本地可视化自动化部署工具",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "deploy",
+    "automation",
+    "vue3",
+    "nodejs",
+    "springboot"
+  ],
+  "author": "deploy-tools",
+  "license": "MIT"
+}
